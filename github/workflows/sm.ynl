@@ -1,0 +1,70 @@
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unzip-all:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 批量解压所有 ZIP 文件（按文件夹存放，且去掉重复的顶层目录）
+        run: |
+          set -euo pipefail
+          # 查找仓库根目录下所有 .zip 文件，并逐个处理
+          find . -maxdepth 1 -name "*.zip" -type f -print0 | while IFS= read -r -d '' zipfile; do
+            # 获取文件名（不含路径和扩展名），例如 app.zip -> app
+            filename=$(basename "$zipfile" .zip)
+            dest="./$filename"
+            echo "正在解压 $zipfile 到 $dest"
+            mkdir -p "$dest"
+
+            tmpdir=$(mktemp -d)
+            unzip -q "$zipfile" -d "$tmpdir"
+
+            # 如果临时目录为空则跳过
+            if [ -z "$(ls -A "$tmpdir" 2>/dev/null || true)" ]; then
+              echo "警告：$zipfile 解压后为空，跳过移动"
+              rm -rf "$tmpdir"
+              continue
+            fi
+
+            # 检查解压后的临时目录是否只有一个顶层目录
+            # 使用 glob 展开并统计非隐藏项（但后面用 dotglob 处理隐藏文件）
+            set -- "$tmpdir"/*
+            if [ "$#" -eq 1 ] && [ -d "$1" ]; then
+              # 只有一个目录：把该目录下的内容（含隐藏文件）移动到目标目录
+              shopt -s dotglob
+              mv "$1"/* "$dest"/ 2>/dev/null || true
+              mv "$1"/.[!.]* "$dest"/ 2>/dev/null || true
+              shopt -u dotglob
+            else
+              # 多个文件/目录：直接把临时目录下所有内容移动到目标目录
+              shopt -s dotglob
+              mv "$tmpdir"/* "$dest"/ 2>/dev/null || true
+              mv "$tmpdir"/.[!.]* "$dest"/ 2>/dev/null || true
+              shopt -u dotglob
+            fi
+
+            # 清理临时目录
+            rm -rf "$tmpdir"
+          done
+
+      - name: 查看解压后的文件结构（可选）
+        run: |
+          echo "根目录文件结构："
+          ls -la
+
+      - name: 提交解压后的文件回仓库
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "自动解压所有 ZIP 文件" || echo "没有变化需要提交"
+          git push
