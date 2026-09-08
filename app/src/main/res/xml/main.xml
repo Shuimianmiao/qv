@@ -1,0 +1,59 @@
+<PreferenceScreen
+	xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<PreferenceScreen
+		android:key="silk_decoder"
+		android:title="Silk解码"
+		android:summary="选择 Silk 文件解码为 MP3">
+		
+		<intent  
+			android:action="android.intent.action.MAIN"  
+			android:targetPackage="com.xmoieo.silk"  
+			android:targetClass="com.xmoieo.silk.SilkDecoder" />  
+		
+	</PreferenceScreen>
+	
+	<PreferenceScreen
+		android:key="silk_encoder"
+		android:title="Silk编码"
+		android:summary="将音频文件编码为 Silk 格式">
+		
+		<intent  
+			android:action="android.intent.action.MAIN"  
+			android:targetPackage="com.xmoieo.silk"  
+			android:targetClass="com.xmoieo.silk.SilkEncoder" />
+
+	</PreferenceScreen>
+	
+	<PreferenceScreen
+		android:key="open_source"
+		android:title="开源许可"
+		android:summary="本应用使用到的开源">
+		
+		<intent  
+			android:action="android.intent.action.MAIN"  
+			android:targetPackage="com.xmoieo.silk"  
+			android:targetClass="com.xmoieo.silk.AboutActivity" />  
+		
+	</PreferenceScreen>
+	
+	<Preference
+		android:key="update_log"
+		android:title="更新日志"
+		android:summary="前往 Github Release 查看各个版本">
+		
+	</Preference>
+	
+	<Preference
+		android:key="issue"
+		android:title="Issue"
+		android:summary="前往 Github Issue 提出建议，你也可以在酷安评论区进行反馈">
+	</Preference>
+	
+	<Preference
+		android:key="author_coolapk"
+		android:title="作者酷安"
+		android:summary="跳转到作者酷安主页">
+	</Preference>
+
+</PreferenceScreen>
