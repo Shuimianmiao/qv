@@ -32,21 +32,34 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      - name: Install Android SDK components (platform tools, platform 36, build-tools, NDK, CMake)
+      - name: Install Android SDK command-line tools and components
         run: |
-          # 在 runner 运行时使用环境变量 $RUNNER_TEMP 来访问临时目录
+          # 使用 runner 提供的临时目录
           export ANDROID_SDK_ROOT="$RUNNER_TEMP/android-sdk"
           mkdir -p "$ANDROID_SDK_ROOT"
-          # 确保 cmdline-tools 存在（部分 runner 需要先安装 cmdline-tools）
+
+          # 下载并安装 Android command-line tools（如果链接失效，请更新版本号）
+          cd "$RUNNER_TEMP"
+          curl -fSL "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip" -o cmdline-tools.zip
+          unzip -q cmdline-tools.zip -d cmdline-tools-temp
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+          mv cmdline-tools-temp/cmdline-tools/* "$ANDROID_SDK_ROOT/cmdline-tools/latest/"
+
+          # 把 cmdline-tools 和 platform-tools 加入 PATH（仅对本 step 生效）
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+
+          # 安装需要的 SDK 包（根据你项目设置）
           yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;4.2.3"
+
+          # 接受所有许可
           yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
-          # 把 sdk 工具加入 PATH（仅对当前 step 生效）
-          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
         shell: bash
 
       - name: Build (debug)
         run: |
+          # 在构建 step 再次导出，确保 gradlew 能找到 SDK / ndk / cmake
           export ANDROID_SDK_ROOT="$RUNNER_TEMP/android-sdk"
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
           ./gradlew assembleDebug --no-daemon
         shell: bash
 
