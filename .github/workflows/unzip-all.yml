@@ -14,11 +14,13 @@ jobs:
       - name: 批量解压所有 ZIP 文件（去掉重复的顶层目录）
         run: |
           set -euo pipefail
-          # 查找仓库根目录下所有 .zip 文件，并逐个处理
-          find . -maxdepth 1 -name "*.zip" -type f -print0 | while IFS= read -r -d '' zipfile; do
-            # 获取文件名（不含路径和扩展名），例如 app.zip -> app
+          # 查找仓库所有 .zip 文件（包括子目录），并逐个处理
+          find . -name "*.zip" -type f -print0 | while IFS= read -r -d '' zipfile; do
+            # 获取文件名（不含路径和扩展名），例如 app/src.zip -> src
             filename=$(basename "$zipfile" .zip)
-            dest="./$filename"
+            # 获取文件所在目录
+            dirpath=$(dirname "$zipfile")
+            dest="$dirpath/$filename"
             echo "正在解压 $zipfile 到 $dest"
             mkdir -p "$dest"
 
@@ -56,7 +58,7 @@ jobs:
       - name: 查看解压后的文件结构（可选）
         run: |
           echo "根目录文件结构："
-          ls -la
+          find . -type f -name "*.zip" | head -20
 
       - name: 提交解压后的文件回仓库
         env:
