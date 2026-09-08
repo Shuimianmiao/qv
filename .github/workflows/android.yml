@@ -8,15 +8,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
-        id: setup-java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -37,19 +34,21 @@ jobs:
 
       - name: Install Android SDK components (platform tools, platform 36, build-tools, NDK, CMake)
         run: |
-          sudo mkdir -p $ANDROID_SDK_ROOT
-          sudo chown -R $USER $ANDROID_SDK_ROOT
-          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;4.2.3"
-        env:
-          PATH: $PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/tools/bin
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
+          # 在 runner 运行时使用环境变量 $RUNNER_TEMP 来访问临时目录
+          export ANDROID_SDK_ROOT="$RUNNER_TEMP/android-sdk"
+          mkdir -p "$ANDROID_SDK_ROOT"
+          # 确保 cmdline-tools 存在（部分 runner 需要先安装 cmdline-tools）
+          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;4.2.3"
+          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
+          # 把 sdk 工具加入 PATH（仅对当前 step 生效）
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+        shell: bash
 
       - name: Build (debug)
-        run: ./gradlew assembleDebug --no-daemon
-        env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+        run: |
+          export ANDROID_SDK_ROOT="$RUNNER_TEMP/android-sdk"
+          ./gradlew assembleDebug --no-daemon
+        shell: bash
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
