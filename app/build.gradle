@@ -1,0 +1,92 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+def releaseTime(){
+  return new Date().format("yyyyMMdd",java.util.TimeZone.getTimeZone("UTC"))
+}
+
+android {
+  namespace 'com.xmoieo.silk'
+  compileSdkVersion 36
+	ndkVersion "28.2.13676358"
+
+	buildFeatures {
+	  dataBinding true
+	  viewBinding true
+	}
+
+  defaultConfig {
+	applicationId "com.xmoieo.silk"
+	  minSdkVersion 21
+	  targetSdkVersion 36
+	  versionCode 26
+	  versionName "2.0.1"
+	  multiDexEnabled true
+
+	  externalNativeBuild {
+		cmake {
+		  cppFlags ""
+			abiFilters 'arm64-v8a'
+		}
+	  }
+  }
+
+  lintOptions {
+	abortOnError false
+  }
+
+  buildTypes {
+	debug{
+	  minifyEnabled false
+		zipAlignEnabled false
+		shrinkResources false
+	}
+	release {
+	  minifyEnabled true
+		multiDexEnabled true
+		zipAlignEnabled true
+	}
+  }
+
+  applicationVariants.all{ variant->
+	variant.outputs.all{
+	  outputFileName= "Silk解码器_${defaultConfig.versionName}_${releaseTime()}.apk"
+	}
+  }
+
+
+  externalNativeBuild {
+	  cmake {
+		  path "src/main/cpp/CMakeLists.txt"
+		  version "4.2.3"
+	  }
+  }
+
+	compileOptions {
+		sourceCompatibility = JavaVersion.VERSION_21
+		targetCompatibility = JavaVersion.VERSION_21
+	}
+
+	kotlin {
+		compilerOptions {
+			jvmTarget = JvmTarget.JVM_21
+		}
+	}
+}
+
+repositories {
+	flatDir {
+		dirs 'libs'
+	}
+}
+
+dependencies {
+  implementation fileTree(dir: "libs", include: ["*.jar"])
+	implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+	implementation 'androidx.core:core-ktx:1.17.0'
+	implementation 'androidx.multidex:multidex:2.0.1'
+	implementation 'androidx.recyclerview:recyclerview:1.4.0'
+	implementation 'androidx.documentfile:documentfile:1.1.0'
+}
